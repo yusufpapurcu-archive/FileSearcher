@@ -13,9 +13,11 @@ const ChName = "chbox"
 const ListboxName = "listbox"
 const ButtonName = "button"
 const EntryName = "entry"
+const FileChs = "dirpicker"
 
 // UIMain is a main glade file location
 var UIMain = os.Getenv("GOPATH") + "/src/github.com/yusufpapurcu/FileSearcher/glade/mainWindow.glade"
+var dir = "."
 
 func main() {
 
@@ -45,6 +47,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	button1, err := getButton1(bldr)
+	if err != nil {
+		panic(err)
+	}
 
 	entr, err := getEntry(bldr)
 	if err != nil {
@@ -55,20 +61,43 @@ func main() {
 		panic(err)
 	}
 	_, err = button.Connect("clicked", func() {
+
 		text, err := entr.GetText()
 		if err != nil {
 			panic(err)
 		}
+
 		if chb.GetActive() {
-			err = loadlist(bldr, app.KeywordSearch(".", text))
+			err = loadlist(bldr, app.KeywordSearch(dir, text))
 			if err != nil {
 				log.Fatal(err)
 			}
 			return
 		}
-		err = loadlist(bldr, app.FileSearch(".", text))
+		err = loadlist(bldr, app.FileSearch(dir, text))
 		if err != nil {
 			log.Fatal(err)
+		}
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = button1.Connect("clicked", func() {
+		fileChooserDlg, err := gtk.FileChooserNativeDialogNew("Open", window, gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER, "_Open", "_Cancel")
+		if err != nil {
+			log.Fatal("Unable to create fileChooserDlg:", err)
+		}
+		response := fileChooserDlg.NativeDialog.Run()
+		if gtk.ResponseType(response) == gtk.RESPONSE_ACCEPT {
+			fileChooser := fileChooserDlg
+			filename := fileChooser.GetFilename()
+			button1.SetLabel("Arama Yapılacak klasörü seçiniz. (" + filename + ")")
+			dir = filename
+		} else {
+			cancelDlg := gtk.MessageDialogNew(window, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, "%s", "No file was selected")
+			cancelDlg.Run()
+			cancelDlg.Destroy()
 		}
 	})
 	if err != nil {
@@ -110,6 +139,21 @@ func getWindow(b *gtk.Builder) (*gtk.Window, error) {
 	return window, nil
 }
 
+func getFileChs(b *gtk.Builder) (*gtk.FileChooser, error) {
+
+	obj, err := b.GetObject(FileChs)
+	if err != nil {
+		return nil, err
+	}
+
+	window, ok := obj.(*gtk.FileChooser)
+	if !ok {
+		return nil, err
+	}
+
+	return window, nil
+}
+
 func getChb(b *gtk.Builder) (*gtk.CheckButton, error) {
 
 	obj, err := b.GetObject(ChName)
@@ -128,6 +172,21 @@ func getChb(b *gtk.Builder) (*gtk.CheckButton, error) {
 func getButton(b *gtk.Builder) (*gtk.Button, error) {
 
 	obj, err := b.GetObject(ButtonName)
+	if err != nil {
+		return nil, err
+	}
+
+	button, ok := obj.(*gtk.Button)
+	if !ok {
+		return nil, err
+	}
+
+	return button, nil
+}
+
+func getButton1(b *gtk.Builder) (*gtk.Button, error) {
+
+	obj, err := b.GetObject("sebut")
 	if err != nil {
 		return nil, err
 	}
